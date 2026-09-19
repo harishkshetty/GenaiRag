@@ -1,0 +1,17 @@
+[project]
+name = "PythonRag"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "chromadb>=1.0.0",
+    "fastapi[standard]>=0.141.1",
+    "pydantic-settings>=2.0.0",
+    "pypdf>=5.0.0",
+    "sentence-transformers>=3.0.0",
+]
+
+[tool.pyright]
+include = ["."]
+venvPath = "."
+venv = ".venv"
+extraPaths = ["."]

@@ -1,0 +1,25 @@
+info:
+  name: my
+  type: http
+  seq: 1
+
+http:
+  method: post
+  url: http://127.0.0.1:8000/embedding/ask
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "question": "What is Harish's work experience?",
+        "top_k": 4
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
