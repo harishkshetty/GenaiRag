@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from api.embedding import router as embedding_router
+from api.routers.embedding import router as embedding_router
 from api.exception_handlers import register_exception_handlers
 from api.user import router as user_router
 

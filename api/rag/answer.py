@@ -1,5 +1,7 @@
 import httpx
 import logging
+import json
+from collections.abc import Iterator
 
 from api.settings import settings
 from api.rag.chroma_store import get_chroma_client, query_similar_chunks
@@ -170,3 +172,41 @@ def ask_question(question: str, top_k: int) -> dict[str, object]:
         "sources": sources,
         "notice": notice,
     }
+
+
+def stream_answer(question: str, top_k: int) -> Iterator[str]:
+    """Yield an Ollama response as Server-Sent Events."""
+    cleaned = question.strip()
+    if not cleaned:
+        raise ValueError("question cannot be empty")
+    if settings.llm_provider != "ollama":
+        raise ValueError("Streaming is currently supported only with LLM_PROVIDER=ollama")
+
+    query_vector = embed_texts(settings.embedding_model, [cleaned])[0]
+    client = get_chroma_client()
+    hits = query_similar_chunks(client, settings.chroma_collection, query_vector, top_k)
+    documents: list[str] = hits["documents"]
+    context = _build_context(documents)
+
+    base = settings.ollama_base_url.rstrip("/")
+    with httpx.stream(
+        "POST",
+        f"{base}/api/chat",
+        json={
+            "model": settings.ollama_model,
+            "messages": _chat_messages(cleaned, context),
+            "stream": True,
+            "options": {"temperature": 0.2},
+        },
+        timeout=120.0,
+    ) as response:
+        response.raise_for_status()
+        for line in response.iter_lines():
+            if not line:
+                continue
+            data = json.loads(line)
+            content = data.get("message", {}).get("content", "")
+            if content:
+                yield f"data: {json.dumps({'token': content})}\n\n"
+            if data.get("done"):
+                yield "data: [DONE]\n\n"
